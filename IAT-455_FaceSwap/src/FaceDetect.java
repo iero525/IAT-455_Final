@@ -13,7 +13,7 @@ public class FaceDetect {
 
 	public static Mat faceDetect(Mat src, String resultType) {
 		CascadeClassifier sample = new CascadeClassifier(
-				"E:\\opencv\\opencv\\sources\\data\\haarcascades\\haarcascade_frontalface_alt_tree.xml");
+				"haarcascade_frontalface_alt_tree.xml");
 		MatOfRect result = new MatOfRect();
 		Mat croppedImage = new Mat();
 		sample.detectMultiScale(src, result);
@@ -38,23 +38,23 @@ public class FaceDetect {
 		return null;
 	}
 
-	public static Mat eyeDetect(Mat src) {
-		CascadeClassifier sample = new CascadeClassifier(
-				"E:\\opencv\\opencv\\sources\\data\\haarcascades\\haarcascade_eye_tree_eyeglasses.xml");
-
-		MatOfRect result = new MatOfRect();
-		sample.detectMultiScale(src, result);
-
-		if (result.toArray().length < 1) {
-			return src;
-		}
-
-		for (Rect rect : result.toArray()) {
-			Imgproc.rectangle(src, new Point(rect.x, rect.y), new Point(rect.x + rect.width, rect.y + rect.height),
-					new Scalar(255, 255, 255), 1);
-		}
-		return src;
-	}
+//	public static Mat eyeDetect(Mat src) {
+//		CascadeClassifier sample = new CascadeClassifier(
+//				"E:\\opencv\\opencv\\sources\\data\\haarcascades\\haarcascade_eye_tree_eyeglasses.xml");
+//
+//		MatOfRect result = new MatOfRect();
+//		sample.detectMultiScale(src, result);
+//
+//		if (result.toArray().length < 1) {
+//			return src;
+//		}
+//
+//		for (Rect rect : result.toArray()) {
+//			Imgproc.rectangle(src, new Point(rect.x, rect.y), new Point(rect.x + rect.width, rect.y + rect.height),
+//					new Scalar(255, 255, 255), 1);
+//		}
+//		return src;
+//	}
 	
 	public static Mat featurePoints (Mat mat) {
 		Mat result = new Mat();
