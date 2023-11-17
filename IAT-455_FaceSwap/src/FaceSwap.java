@@ -9,13 +9,13 @@ import java.util.ArrayList;
 import java.util.List;
 
 import javax.imageio.ImageIO;
-
 import org.opencv.core.*;
 import org.opencv.imgcodecs.Imgcodecs;
+import org.opencv.imgproc.Imgproc;
 
 public class FaceSwap extends Frame {
 
-	BufferedImage dectectedRect, detectCropped, featurePoints;
+	BufferedImage dectectedRect, detectCropped, featurePoints, hullImg;
 
 	public FaceSwap() {
 		System.loadLibrary(Core.NATIVE_LIBRARY_NAME);
@@ -25,11 +25,14 @@ public class FaceSwap extends Frame {
 		Mat rect = FaceDetect.faceDetect(src, "rect");
 		Mat cropped = FaceDetect.faceDetect(src, "cropped");
 		Mat feature = FaceDetect.featurePoints(cropped);
+		Mat hull = hull(cropped);
 
 		try {
 			dectectedRect = convert(rect);
 			detectCropped = convert(cropped);
 			featurePoints = convert(feature);
+			hullImg = convert(hull);
+
 		} catch (IOException e) {
 			System.out.println("Convert Error");
 		}
@@ -64,8 +67,11 @@ public class FaceSwap extends Frame {
 		g.drawImage(dectectedRect, 50, 50, dectectedRect.getWidth() / 2, dectectedRect.getHeight() / 2, this);
 		g.drawImage(detectCropped, 25 + dectectedRect.getWidth() / 2 + 50, 50, detectCropped.getWidth(),
 				detectCropped.getHeight(), this);
-		g.drawImage(featurePoints, 25 + dectectedRect.getWidth() / 2 + detectCropped.getWidth() + 100, 50, featurePoints.getWidth(),
-				featurePoints.getHeight(), this);
+		g.drawImage(featurePoints, 50 + dectectedRect.getWidth() / 2 + detectCropped.getWidth() + 50, 50,
+				featurePoints.getWidth(), featurePoints.getHeight(), this);
+		g.drawImage(hullImg,
+				75 + dectectedRect.getWidth() / 2 + detectCropped.getWidth() + featurePoints.getWidth() + 50, 50,
+				hullImg.getWidth(), hullImg.getHeight(), this);
 	}
 
 	public static void main(String[] args) {
@@ -73,5 +79,45 @@ public class FaceSwap extends Frame {
 		main.repaint();
 
 	}
+	
+	//TESTING
+	// https://docs.opencv.org/4.x/d7/d1d/tutorial_hull.html
+	public Mat hull(Mat src) {
+		Mat srcGray = new Mat();
+		int threshold = 100;
 
+		Imgproc.cvtColor(src, srcGray, Imgproc.COLOR_BGR2GRAY);
+		Imgproc.blur(srcGray, srcGray, new Size(3, 3));
+
+		Mat cannyOutput = new Mat();
+		Imgproc.Canny(srcGray, cannyOutput, threshold, threshold * 2);
+
+		List<MatOfPoint> contours = new ArrayList<>();
+		Mat hierarchy = new Mat();
+		Imgproc.findContours(cannyOutput, contours, hierarchy, Imgproc.RETR_TREE, Imgproc.CHAIN_APPROX_SIMPLE);
+
+		List<MatOfPoint> hullList = new ArrayList<>();
+		for (MatOfPoint contour : contours) {
+			MatOfInt hull = new MatOfInt();
+			Imgproc.convexHull(contour, hull);
+			Point[] contourArray = contour.toArray();
+			Point[] hullPoints = new Point[hull.rows()];
+			List<Integer> hullContourIdxList = hull.toList();
+			for (int i = 0; i < hullContourIdxList.size(); i++) {
+				hullPoints[i] = contourArray[hullContourIdxList.get(i)];
+			}
+			hullList.add(new MatOfPoint(hullPoints));
+		}
+
+		Mat drawing = Mat.zeros(cannyOutput.size(), CvType.CV_8UC3);
+		for (int i = 0; i < contours.size(); i++) {
+			Scalar color = new Scalar(255, 255, 255);
+//			Imgproc.drawContours(drawing, contours, i, color);
+			Imgproc.drawContours(drawing, hullList, i, color);
+		}
+		return drawing;
+	}
+	
+	
+	
 }

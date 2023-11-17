@@ -1,5 +1,9 @@
+import java.util.ArrayList;
+import java.util.List;
+
 import org.opencv.core.Mat;
 import org.opencv.core.MatOfKeyPoint;
+import org.opencv.core.MatOfPoint2f;
 import org.opencv.core.MatOfRect;
 import org.opencv.core.Point;
 import org.opencv.core.Rect;
@@ -12,8 +16,7 @@ import org.opencv.objdetect.CascadeClassifier;
 public class FaceDetect {
 
 	public static Mat faceDetect(Mat src, String resultType) {
-		CascadeClassifier sample = new CascadeClassifier(
-				"haarcascade_frontalface_alt_tree.xml");
+		CascadeClassifier sample = new CascadeClassifier("haarcascade_frontalface_alt_tree.xml");
 		MatOfRect result = new MatOfRect();
 		Mat croppedImage = new Mat();
 		sample.detectMultiScale(src, result);
@@ -55,17 +58,35 @@ public class FaceDetect {
 //		}
 //		return src;
 //	}
-	
-	public static Mat featurePoints (Mat mat) {
+
+	public static Mat featurePoints(Mat mat) {
 		Mat result = new Mat();
 		Mat gray = new Mat();
 		Imgproc.cvtColor(mat, gray, Imgproc.COLOR_BGR2GRAY);
-		ORB orb = ORB.create(50,2,8,10,0,2,ORB.HARRIS_SCORE,10,20);
+		ORB orb = ORB.create(50, 2, 8, 10, 0, 2, ORB.HARRIS_SCORE, 10, 20);
 		MatOfKeyPoint pt = new MatOfKeyPoint();
 		orb.detect(gray, pt);
-		
-		Features2d.drawKeypoints(mat, pt, result, new Scalar(255,255,255),Features2d.DrawMatchesFlags_DRAW_RICH_KEYPOINTS);
+
+		Features2d.drawKeypoints(mat, pt, result, new Scalar(255, 255, 255),
+				Features2d.DrawMatchesFlags_DRAW_RICH_KEYPOINTS);
 		return result;
+	}
+
+	
+	// https://docs.opencv.org/3.4.16/d7/dff/tutorial_feature_homography.html
+	public static MatOfPoint2f featurePoints2f(Mat mat) {
+		Mat gray = new Mat();
+		Imgproc.cvtColor(mat, gray, Imgproc.COLOR_BGR2GRAY);
+		ORB orb = ORB.create(50, 2, 8, 10, 0, 2, ORB.HARRIS_SCORE, 10, 20);
+		MatOfKeyPoint pt = new MatOfKeyPoint();
+		orb.detect(gray, pt);
+		List<Point> pts = new ArrayList<>();
+		 for (int i = 0; i < pt.toList().size(); i++) {
+	            pts.add(pt.toList().get(i).pt);
+	        }
+		MatOfPoint2f pts2f = new MatOfPoint2f();
+		pts2f.fromList(pts);
+		return pts2f;
 	}
 
 }
