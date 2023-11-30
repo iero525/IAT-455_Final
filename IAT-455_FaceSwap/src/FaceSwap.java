@@ -1,3 +1,4 @@
+
 import java.awt.Frame;
 import java.awt.Graphics;
 import java.awt.event.WindowAdapter;
@@ -9,29 +10,53 @@ import java.util.ArrayList;
 import java.util.List;
 
 import javax.imageio.ImageIO;
+
 import org.opencv.core.*;
 import org.opencv.imgcodecs.Imgcodecs;
 import org.opencv.imgproc.Imgproc;
+import org.opencv.photo.Photo;
 
 public class FaceSwap extends Frame {
 
-	BufferedImage dectectedRect, detectCropped, featurePoints, hullImg;
+	BufferedImage detectCropped, test;
 
 	public FaceSwap() {
 		System.loadLibrary(Core.NATIVE_LIBRARY_NAME);
 
-		Mat src = Imgcodecs.imread("src.jpg");
+		Mat src = Imgcodecs.imread("src1.jpg");
+		Mat target = Imgcodecs.imread("1.jpg");
 
-		Mat rect = FaceDetect.faceDetect(src, "rect");
-		Mat cropped = FaceDetect.faceDetect(src, "cropped");
-		Mat feature = FaceDetect.featurePoints(cropped);
-		Mat hull = hull(cropped);
+		Mat cropped1 = FaceDetect.faceDetect(src);
+		Mat cropped2 = FaceDetect.faceDetect(target);
+
+		List<MatOfPoint> hull1 = hullpoints(cropped1);
+		List<MatOfPoint> hull2 = hullpoints(cropped2);
+
+		List<Point> hullpoints1 = new ArrayList<>();
+		List<Point> hullpoints2 = new ArrayList<>();
+
+		for (MatOfPoint matOfPoint : hull1) {
+			hullpoints1.addAll(matOfPoint.toList());
+		}
+		for (MatOfPoint matOfPoint : hull2) {
+			hullpoints2.addAll(matOfPoint.toList());
+		}
+
+		Size newSize = new Size(cropped2.width(), cropped2.height());
+		Imgproc.resize(cropped1, cropped1, newSize);
+		Mat test2 = triangle(cropped1, cropped2, hullpoints2);
+
+		//
+		
+		Rect rect2 = FaceDetect.rect(target);
+		test2.copyTo(new Mat(target, rect2));
+
+		Mat test1 = target.clone();
+		//
 
 		try {
-			dectectedRect = convert(rect);
-			detectCropped = convert(cropped);
-			featurePoints = convert(feature);
-			hullImg = convert(hull);
+			detectCropped = convert(cropped1);
+			test = convert(test1);
 
 		} catch (IOException e) {
 			System.out.println("Convert Error");
@@ -64,14 +89,7 @@ public class FaceSwap extends Frame {
 
 		this.setSize(1500, 800);
 
-		g.drawImage(dectectedRect, 50, 50, dectectedRect.getWidth() / 2, dectectedRect.getHeight() / 2, this);
-		g.drawImage(detectCropped, 25 + dectectedRect.getWidth() / 2 + 50, 50, detectCropped.getWidth(),
-				detectCropped.getHeight(), this);
-		g.drawImage(featurePoints, 50 + dectectedRect.getWidth() / 2 + detectCropped.getWidth() + 50, 50,
-				featurePoints.getWidth(), featurePoints.getHeight(), this);
-		g.drawImage(hullImg,
-				75 + dectectedRect.getWidth() / 2 + detectCropped.getWidth() + featurePoints.getWidth() + 50, 50,
-				hullImg.getWidth(), hullImg.getHeight(), this);
+		g.drawImage(test, 75, 50, test.getWidth(), test.getHeight(), this);
 	}
 
 	public static void main(String[] args) {
@@ -79,10 +97,10 @@ public class FaceSwap extends Frame {
 		main.repaint();
 
 	}
-	
-	//TESTING
+
+	// ConvexHull
 	// https://docs.opencv.org/4.x/d7/d1d/tutorial_hull.html
-	public Mat hull(Mat src) {
+	public List<MatOfPoint> hullpoints(Mat src) {
 		Mat srcGray = new Mat();
 		int threshold = 100;
 
@@ -108,16 +126,32 @@ public class FaceSwap extends Frame {
 			}
 			hullList.add(new MatOfPoint(hullPoints));
 		}
+		return hullList;
 
-		Mat drawing = Mat.zeros(cannyOutput.size(), CvType.CV_8UC3);
-		for (int i = 0; i < contours.size(); i++) {
-			Scalar color = new Scalar(255, 255, 255);
-//			Imgproc.drawContours(drawing, contours, i, color);
-			Imgproc.drawContours(drawing, hullList, i, color);
-		}
-		return drawing;
 	}
-	
-	
-	
+
+	// test
+	public Mat triangle(Mat src, Mat target, List<Point> points) {
+
+		List<Point> hull = new ArrayList<>();
+		for (int i = 0; i < points.size(); i++) {
+			Point pt = new Point((int) points.get(i).x, (int) points.get(i).y);
+			hull.add(pt);
+		}
+		Mat mask = Mat.zeros(target.rows(), target.cols(), target.type());
+		Imgproc.fillConvexPoly(mask, new MatOfPoint(hull.toArray(new Point[0])), new Scalar(255, 255, 255));
+
+		Rect r = Imgproc.boundingRect(new MatOfPoint2f(hull.toArray(new Point[0])));
+		Point center = new Point((r.tl().x + r.br().x) / 2, (r.tl().y + r.br().y) / 2);
+
+		src.convertTo(src, CvType.CV_8UC3);
+
+		Mat output = new Mat();
+
+		Photo.seamlessClone(src, target, mask, center, output, Photo.NORMAL_CLONE);
+
+		return output;
+
+	}
+
 }

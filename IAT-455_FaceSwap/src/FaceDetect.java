@@ -15,7 +15,7 @@ import org.opencv.objdetect.CascadeClassifier;
 
 public class FaceDetect {
 
-	public static Mat faceDetect(Mat src, String resultType) {
+	public static Mat faceDetect(Mat src) {
 		CascadeClassifier sample = new CascadeClassifier("haarcascade_frontalface_alt_tree.xml");
 		MatOfRect result = new MatOfRect();
 		Mat croppedImage = new Mat();
@@ -23,22 +23,22 @@ public class FaceDetect {
 
 		if (result.toArray().length < 1) {
 			return src;
-		}
-
-		for (Rect rect : result.toArray()) {
-			Imgproc.rectangle(src, new Point(rect.x, rect.y), new Point(rect.x + rect.width, rect.y + rect.height),
-					new Scalar(255, 255, 255), 1);
-
+		} else if (result.toArray().length >= 1) {
+			Rect rect = result.toArray()[0];
 			croppedImage = new Mat(src,
 					new Rect(new Point(rect.x, rect.y), new Point(rect.x + rect.width, rect.y + rect.height)));
 		}
+		return croppedImage;
+	}
 
-		if (resultType == "rect") {
-			return src;
-		} else if (resultType == "cropped") {
-			return croppedImage;
-		}
-		return null;
+	public static Rect rect(Mat src) {
+
+		CascadeClassifier sample = new CascadeClassifier("haarcascade_frontalface_alt_tree.xml");
+		MatOfRect result = new MatOfRect();
+
+		sample.detectMultiScale(src, result);
+
+		return result.toArray()[0];
 	}
 
 //	public static Mat eyeDetect(Mat src) {
@@ -72,7 +72,6 @@ public class FaceDetect {
 		return result;
 	}
 
-	
 	// https://docs.opencv.org/3.4.16/d7/dff/tutorial_feature_homography.html
 	public static MatOfPoint2f featurePoints2f(Mat mat) {
 		Mat gray = new Mat();
@@ -81,9 +80,9 @@ public class FaceDetect {
 		MatOfKeyPoint pt = new MatOfKeyPoint();
 		orb.detect(gray, pt);
 		List<Point> pts = new ArrayList<>();
-		 for (int i = 0; i < pt.toList().size(); i++) {
-	            pts.add(pt.toList().get(i).pt);
-	        }
+		for (int i = 0; i < pt.toList().size(); i++) {
+			pts.add(pt.toList().get(i).pt);
+		}
 		MatOfPoint2f pts2f = new MatOfPoint2f();
 		pts2f.fromList(pts);
 		return pts2f;
