@@ -24,7 +24,7 @@ public class FaceSwap extends Frame {
 		System.loadLibrary(Core.NATIVE_LIBRARY_NAME);
 
 		Mat src = Imgcodecs.imread("src1.jpg");
-		Mat target = Imgcodecs.imread("1.jpg");
+		Mat target = Imgcodecs.imread("target3.jpg");
 
 		Mat cropped1 = FaceDetect.faceDetect(src);
 		Mat cropped2 = FaceDetect.faceDetect(target);
